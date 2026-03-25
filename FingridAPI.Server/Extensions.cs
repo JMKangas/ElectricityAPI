@@ -1,3 +1,4 @@
+using FingridAPI.Server.Infrastructure.External;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,6 +8,9 @@ using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Polly;
+using Polly.CircuitBreaker;
+using Polly.Retry;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -40,6 +44,26 @@ public static class Extensions
         // {
         //     options.AllowedSchemes = ["https"];
         // });
+        builder.Services.AddResiliencePipeline("ef-db", pipeline =>
+        {
+            pipeline.AddRetry(new RetryStrategyOptions
+            {
+                MaxRetryAttempts = 3
+            });
+
+            pipeline.AddCircuitBreaker(new CircuitBreakerStrategyOptions
+            {
+                FailureRatio = 0.5,
+                MinimumThroughput = 10,
+                BreakDuration = TimeSpan.FromSeconds(10)
+            });
+        });
+
+        builder.Services.AddHttpClient<FingridApiClient>("fingrid", client =>
+        {
+            client.BaseAddress = new Uri("https://api.fingrid.fi/v1/");
+            client.DefaultRequestHeaders.Add("x-api-key", builder.Configuration["Fingrid:ApiKey"]);
+        });
 
         return builder;
     }

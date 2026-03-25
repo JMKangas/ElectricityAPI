@@ -1,3 +1,7 @@
+using FingridAPI.Server.API.Endpoints;
+using FingridAPI.Server.Application.Services;
+using FingridAPI.Server.Infrastructure.External;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
@@ -8,6 +12,24 @@ builder.Services.AddProblemDetails();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+//builder.Services.AddHttpClient<FingridApiClient>("fingrid", client =>
+//{
+//    client.BaseAddress = new Uri("https://data.fingrid.fi/api/");
+//    client.DefaultRequestHeaders.Add("x-api-key", builder.Configuration["FingridApi:ApiKey"]);
+//});
+builder.Services.AddHttpClient<FingridApiClient>(client =>
+{
+    client.BaseAddress = new Uri("https://data.fingrid.fi/api/");
+    client.DefaultRequestHeaders.Add(
+        "x-api-key",
+        builder.Configuration["FingridApi:ApiKey"] 
+    );
+});
+Console.WriteLine("API KEY = " + builder.Configuration["FingridApi:ApiKey"]);
+// REGISTER THE SERVICE (required)
+builder.Services.AddScoped<FingridService>();
+
 
 var app = builder.Build();
 
@@ -38,6 +60,10 @@ api.MapGet("weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 app.MapDefaultEndpoints();
+
+app.MapSpotPriceEndpoints();   // <-- Add this
+//app.MapDefaultEndpoints();
+app.MapDatasetEndpoints();
 
 app.UseFileServer();
 
