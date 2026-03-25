@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import aspireLogo from '/Aspire.png'
+//import aspireLogo from '/Aspire.png'
+import jkLogo from '/jk-logo.png'
 import './App.css'
 
 interface WeatherForecast {
@@ -57,8 +58,8 @@ function App() {
           rel="noopener noreferrer"
           aria-label="Visit Aspire website (opens in new tab)"
           className="logo-link"
-        >
-          <img src={aspireLogo} className="logo" alt="Aspire logo" />
+              >
+                  <img src={jkLogo} className="logo" alt="Aspire logo" />
         </a>
         <h1 className="app-title">Aspire Starter</h1>
         <p className="app-subtitle">Modern distributed application development</p>

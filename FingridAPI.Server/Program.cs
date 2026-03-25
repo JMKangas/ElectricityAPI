@@ -18,6 +18,8 @@ builder.Services.AddOpenApi();
 //    client.BaseAddress = new Uri("https://data.fingrid.fi/api/");
 //    client.DefaultRequestHeaders.Add("x-api-key", builder.Configuration["FingridApi:ApiKey"]);
 //});
+
+//API clients
 builder.Services.AddHttpClient<FingridApiClient>(client =>
 {
     client.BaseAddress = new Uri("https://data.fingrid.fi/api/");
@@ -26,10 +28,14 @@ builder.Services.AddHttpClient<FingridApiClient>(client =>
         builder.Configuration["FingridApi:ApiKey"] 
     );
 });
-Console.WriteLine("API KEY = " + builder.Configuration["FingridApi:ApiKey"]);
+
+builder.Services.AddHttpClient<SpotPriceApiClient>(client =>
+{
+    client.BaseAddress = new Uri("https://www.sahkohinta-api.fi/api/vartti/v1/");
+});
 // REGISTER THE SERVICE (required)
 builder.Services.AddScoped<FingridService>();
-
+builder.Services.AddScoped<SpotPriceService>();
 
 var app = builder.Build();
 
