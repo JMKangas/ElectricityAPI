@@ -38,6 +38,25 @@ namespace FingridAPI.Server.API.Endpoints
 
             }
 
+            app.MapGet("/datasets/124/data", GetElectricityConsumption)
+                .WithName("GetElectricityConsumption");
+
+            static async Task<IResult> GetElectricityConsumption(
+                [FromServices] FingridService service,
+                [FromQuery] DateTime? startTime,
+                [FromQuery] DateTime? endTime,
+                [FromQuery] int? page,
+                [FromQuery] int? pageSize)
+            {
+                var result = await service.GetElectricityConsumptionAsync(
+                    startTime,
+                    endTime,
+                    page,
+                    pageSize);
+
+                return Results.Ok(result);
+            }
+
             return app;
         }
     }
