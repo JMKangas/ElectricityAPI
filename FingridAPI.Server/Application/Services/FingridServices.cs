@@ -14,5 +14,10 @@ namespace FingridAPI.Server.Application.Services
 
         public Task<SpotPrice> GetSpotPriceAsync()
             => _client.GetSpotPriceAsync();
+
+        public async Task<DatasetMetadata> GetDatasetMetadataAsync(int id)
+        {
+            return await _client.GetDatasetMetadataAsync(id);
+        }
     }
 }
