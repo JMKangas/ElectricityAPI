@@ -1,6 +1,6 @@
 ﻿namespace FingridAPI.Server.API.DTOs
 {
-    public class SpotPriceDto
+    public sealed class SpotPriceDto
     {
         public double Value { get; set; }
 

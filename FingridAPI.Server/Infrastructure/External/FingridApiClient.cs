@@ -2,7 +2,7 @@
 
 namespace FingridAPI.Server.Infrastructure.External
 {
-    public class FingridApiClient
+    public sealed class FingridApiClient
     {
         private readonly HttpClient _http;
 
@@ -35,6 +35,69 @@ namespace FingridAPI.Server.Infrastructure.External
             return result;
         }
 
+        public async Task<DatasetData> GetDatasetDataAsync(
+        int datasetId,
+        DateTime? start = null,
+        DateTime? end = null)
+        {
+            // Build the base URL
+            var url = $"datasets/{datasetId}/data";
+
+            // Collect query parameters
+            var query = new List<string>();
+
+            if (start != null)
+                query.Add($"startTime={start.Value:O}");
+
+            if (end != null)
+                query.Add($"endTime={end.Value:O}");
+
+            // Attach query string if it exists
+            if (query.Count > 0)
+                url += "?" + string.Join("&", query);
+
+            // Send request
+            var response = await _http.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            // Deserialize JSON into your model
+            var result = await response.Content.ReadFromJsonAsync<DatasetData>();
+
+            return result ?? throw new Exception("Dataset data is null");
+        }
+
+        public async Task<DatasetData> GetDatasetDataAsync(
+        int datasetId,
+        DateTime? start = null,
+        DateTime? end = null,
+        int? page = null,
+        int? pageSize = null)
+        {
+            var url = $"datasets/{datasetId}/data";
+
+            var query = new List<string>();
+
+            if (start != null)
+                query.Add($"startTime={start.Value:O}");
+
+            if (end != null)
+                query.Add($"endTime={end.Value:O}");
+
+            if (page != null)
+                query.Add($"page={page}");
+
+            if (pageSize != null)
+                query.Add($"pageSize={pageSize}");
+
+            if (query.Count > 0)
+                url += "?" + string.Join("&", query);
+
+            var response = await _http.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<DatasetData>();
+            return result ?? throw new Exception("Dataset data is null");
+        }
 
         //public Task<DatasetMetadata> GetDatasetMetadataAsync(int id)
         //    => _http.GetFromJsonAsync<DatasetMetadata>($"datasets/{id}");

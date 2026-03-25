@@ -3,9 +3,10 @@ using FingridAPI.Server.Infrastructure.External;
 
 namespace FingridAPI.Server.Application.Services
 {
-    public class FingridService
+    public sealed class FingridService
     {
         private readonly FingridApiClient _client;
+        private DatasetMetadata? _cachedMetadata;
 
         public FingridService(FingridApiClient client)
         {
@@ -18,6 +19,15 @@ namespace FingridAPI.Server.Application.Services
         public async Task<DatasetMetadata> GetDatasetMetadataAsync(int id)
         {
             return await _client.GetDatasetMetadataAsync(id);
+        }
+
+        public async Task<DatasetData> GetElectricityConsumptionAsync(
+        DateTime? start = null,
+        DateTime? end = null,
+        int? page = null,
+        int? pageSize = null)
+        {
+            return await _client.GetDatasetDataAsync(124, start, end, page, pageSize);
         }
     }
 }

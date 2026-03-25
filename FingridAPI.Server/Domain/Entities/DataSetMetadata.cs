@@ -1,6 +1,6 @@
 ﻿namespace FingridAPI.Server.Domain.Entities
 {
-    public class DatasetMetadata
+    public sealed class DatasetMetadata
     {
         public int Id { get; set; }
         public DateTime ModifiedAtUtc { get; set; }
