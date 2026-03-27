@@ -3,9 +3,9 @@
 
     public sealed class SpotPriceQuarter
     {
-        public double? Hinta { get; set; }
-        public DateTime Alku { get; set; }
-        public DateTime Loppu { get; set; }
+        public double? Price { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
     }
 
 }
