@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 //import aspireLogo from '/Aspire.png'
 import jkLogo from '/jk-logo.png'
 import './App.css'
+import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
 
 interface WeatherForecast {
   date: string
@@ -10,12 +11,51 @@ interface WeatherForecast {
   summary: string
 }
 
-function App() {
-  const [weatherData, setWeatherData] = useState<WeatherForecast[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [useCelsius, setUseCelsius] = useState(false)
+interface SpotPrice {
+    aikaleima_suomi: string;
+    aikaleima_utc: string;
+    hinta: number;
+}
 
+function App() {
+    const [spotData, setSpotData] = useState<SpotPrice[]>([]);
+    const [spotLoading, setSpotLoading] = useState(false);
+    const [spotError, setSpotError] = useState<string | null>(null);
+    const [useHourly, setUseHourly] = useState(false); // <--- 15min vs hourly toggle
+
+
+    const [weatherData, setWeatherData] = useState<WeatherForecast[]>([])
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [useCelsius, setUseCelsius] = useState(false)
+
+    //ELECTRICITY
+    const fetchSpotPrices = async () => {
+        setSpotLoading(true);
+        setSpotError(null);
+
+        try {
+            const response = await fetch('/spotprice/cheap?vartit=96&aikaraja=2026-03-25');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data: SpotPrice[] = await response.json();
+            setSpotData(data);
+        } catch (err) {
+            setSpotError(err instanceof Error ? err.message : 'Failed to fetch spot prices');
+            console.error('Error fetching spot prices:', err);
+        } finally {
+            setSpotLoading(false);
+        }
+    };
+
+
+
+
+
+    //FORECAST
   const fetchWeatherForecast = async () => {
     setLoading(true)
     setError(null)
@@ -37,9 +77,32 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    fetchWeatherForecast()
-  }, [])
+    useEffect(() => {
+        fetchSpotPrices();
+        fetchWeatherForecast();
+    }, [])
+
+    //Electricity data
+    const getDisplayedSpotData = () => {
+        if (!useHourly) return spotData;
+
+        // Hourly: group every 4 x 15min entries
+        const hourly: SpotPrice[] = [];
+
+        for (let i = 0; i < spotData.length; i += 4) {
+            const slice = spotData.slice(i, i + 4);
+            const avgPrice =
+                slice.reduce((acc, x) => acc + x.hinta, 0) / slice.length;
+
+            hourly.push({
+                aikaleima_suomi: slice[0].aikaleima_suomi,
+                aikaleima_utc: slice[0].aikaleima_utc,
+                hinta: Number(avgPrice.toFixed(3))
+            });
+        }
+
+        return hourly;
+    };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, { 
@@ -61,11 +124,101 @@ function App() {
               >
                   <img src={jkLogo} className="logo" alt="Aspire logo" />
         </a>
-        <h1 className="app-title">Aspire Starter</h1>
-        <p className="app-subtitle">Modern distributed application development</p>
+        <h1 className="app-title">Fingrid electricity app</h1>
+        <p className="app-subtitle">Modern minimal api</p>
       </header>
 
-      <main className="main-content">
+          <main className="main-content">
+              <section className="spot-section" aria-labelledby="spot-heading">
+                  <div className="card">
+                      <div className="section-header">
+                          <h2 id="spot-heading" className="section-title">Electricity Spot Prices</h2>
+
+                          <fieldset className="toggle-switch" aria-label="Spot resolution selection">
+                              <legend className="visually-hidden">Time resolution</legend>
+
+                              <button
+                                  className={`toggle-option ${!useHourly ? 'active' : ''}`}
+                                  onClick={() => setUseHourly(false)}
+                                  aria-pressed={!useHourly}
+                                  type="button"
+                              >
+                                  15 min
+                              </button>
+
+                              <button
+                                  className={`toggle-option ${useHourly ? 'active' : ''}`}
+                                  onClick={() => setUseHourly(true)}
+                                  aria-pressed={useHourly}
+                                  type="button"
+                              >
+                                  Hourly
+                              </button>
+                          </fieldset>
+
+                          <button
+                              className="refresh-button"
+                              onClick={fetchSpotPrices}
+                              disabled={spotLoading}
+                          >
+                              {spotLoading ? 'Loading...' : 'Refresh'}
+                          </button>
+                      </div>
+
+                      {spotError && <div className="error-message">{spotError}</div>}
+
+                      {spotLoading && spotData.length === 0 && (
+                          <div className="loading-skeleton">
+                              {[...Array(5)].map((_, i) => (
+                                  <div key={i} className="skeleton-row" />
+                              ))}
+                          </div>
+                      )}
+                      {/*{spotData.length > 0 && (*/}
+                      {/*    <ResponsiveContainer width="100%" height={300}>*/}
+                      {/*        <LineChart data={getDisplayedSpotData()}>*/}
+                      {/*            <CartesianGrid strokeDasharray="3 3" />*/}
+                      {/*            <XAxis dataKey="aikaleima_suomi" tick={{ fontSize: 12 }} />*/}
+                      {/*            <YAxis tick={{ fontSize: 12 }} />*/}
+                      {/*            <Tooltip*/}
+                      {/*                formatter={(value) => `${value} c/kWh`}*/}
+                      {/*                labelFormatter={(label) => `Time: ${label}`}*/}
+                      {/*            />*/}
+                      {/*            <Line*/}
+                      {/*                type="monotone"*/}
+                      {/*                dataKey="hinta"*/}
+                      {/*                stroke="#ff7300"*/}
+                      {/*                strokeWidth={2}*/}
+                      {/*                dot={false}*/}
+                      {/*            />*/}
+                      {/*        </LineChart>*/}
+                      {/*    </ResponsiveContainer>*/}
+                      {/*)}*/}
+                      {/*{spotData.length > 0 && (*/}
+                      {/*    <div className="weather-grid">*/}
+                      {/*        {getDisplayedSpotData().map((item, index) => (*/}
+                      {/*            <article key={index} className="weather-card">*/}
+                      {/*                <h3 className="weather-date">*/}
+                      {/*                    <time>{item.aikaleima_suomi}</time>*/}
+                      {/*                </h3>*/}
+                      {/*                <p className="weather-summary">Spot Price</p>*/}
+                      {/*                <div className="weather-temps">*/}
+                      {/*                    <div className="temp-group">*/}
+                      {/*                        <span className="temp-value">{item.hinta} c/kWh</span>*/}
+                      {/*                    </div>*/}
+                      {/*                </div>*/}
+                      {/*            </article>*/}
+                      {/*        ))}*/}
+                      {/*    </div>*/}
+                      {/*)}*/}
+                  </div>
+              </section>
+
+
+
+
+
+          
         <section className="weather-section" aria-labelledby="weather-heading">
           <div className="card">
             <div className="section-header">
