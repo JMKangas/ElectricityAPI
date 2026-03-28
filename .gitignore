@@ -11,6 +11,16 @@
 *.sln.docstates
 *.env*
 
+# .NET build folders
+bin/
+obj/
+pub/
+
+# Frontend build output
+dist/
+dist-ssr/
+
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

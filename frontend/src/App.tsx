@@ -239,6 +239,12 @@ function App() {
                                                       color: "#00ffff",
                                                       width: 2,
                                                   },
+                                                  label: {
+                                                      show: true,
+                                                      formatter: (params: any) => {
+                                                          return params.value.substring(11, 16);
+                                                      }
+                                                  },
                                                   data: (function () {
 
                                                       const mins = utc2.getMinutes();
