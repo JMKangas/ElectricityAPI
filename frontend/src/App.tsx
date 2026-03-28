@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 //import aspireLogo from '/Aspire.png'
 import jkLogo from '/jk-logo.png'
 import './App.css'
-import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
+import ReactECharts from 'echarts-for-react';
+
+//const ReactEChartsFixed = ReactECharts as unknown as React.FC<any>;
 
 interface WeatherForecast {
   date: string
@@ -174,43 +176,46 @@ function App() {
                               ))}
                           </div>
                       )}
-                      {/*{spotData.length > 0 && (*/}
-                      {/*    <ResponsiveContainer width="100%" height={300}>*/}
-                      {/*        <LineChart data={getDisplayedSpotData()}>*/}
-                      {/*            <CartesianGrid strokeDasharray="3 3" />*/}
-                      {/*            <XAxis dataKey="aikaleima_suomi" tick={{ fontSize: 12 }} />*/}
-                      {/*            <YAxis tick={{ fontSize: 12 }} />*/}
-                      {/*            <Tooltip*/}
-                      {/*                formatter={(value) => `${value} c/kWh`}*/}
-                      {/*                labelFormatter={(label) => `Time: ${label}`}*/}
-                      {/*            />*/}
-                      {/*            <Line*/}
-                      {/*                type="monotone"*/}
-                      {/*                dataKey="hinta"*/}
-                      {/*                stroke="#ff7300"*/}
-                      {/*                strokeWidth={2}*/}
-                      {/*                dot={false}*/}
-                      {/*            />*/}
-                      {/*        </LineChart>*/}
-                      {/*    </ResponsiveContainer>*/}
-                      {/*)}*/}
-                      {/*{spotData.length > 0 && (*/}
-                      {/*    <div className="weather-grid">*/}
-                      {/*        {getDisplayedSpotData().map((item, index) => (*/}
-                      {/*            <article key={index} className="weather-card">*/}
-                      {/*                <h3 className="weather-date">*/}
-                      {/*                    <time>{item.aikaleima_suomi}</time>*/}
-                      {/*                </h3>*/}
-                      {/*                <p className="weather-summary">Spot Price</p>*/}
-                      {/*                <div className="weather-temps">*/}
-                      {/*                    <div className="temp-group">*/}
-                      {/*                        <span className="temp-value">{item.hinta} c/kWh</span>*/}
-                      {/*                    </div>*/}
-                      {/*                </div>*/}
-                      {/*            </article>*/}
-                      {/*        ))}*/}
-                      {/*    </div>*/}
-                      {/*)}*/}
+                      {spotData.length > 0 && (
+                          <div style={{ width: "100%", height: "300px" }}>
+                              <ReactECharts
+                                  option={{
+                                      tooltip: {
+                                          trigger: 'axis',
+                                          formatter: (params: any) => {
+                                              const item = params[0];
+                                              return `
+                            <strong>${item.axisValue}</strong><br/>
+                            Spot price: ${item.data} c/kWh
+                        `;
+                                          }
+                                      },
+                                      xAxis: {
+                                          type: 'category',
+                                          data: getDisplayedSpotData().map(x => x.aikaleima_suomi),
+                                          axisLabel: { fontSize: 10 }
+                                      },
+                                      yAxis: {
+                                          type: 'value',
+                                          axisLabel: { formatter: '{value} c/kWh' }
+                                      },
+                                      series: [
+                                          {
+                                              data: getDisplayedSpotData().map(x => x.hinta),
+                                              type: 'line',
+                                              smooth: true,
+                                              lineStyle: {
+                                                  width: 2,
+                                                  color: '#ff7300'
+                                              },
+                                              showSymbol: false
+                                          }
+                                      ]
+                                  }}
+                                  style={{ height: '100%', width: '100%' }}
+                              />
+                          </div>
+                      )}
                   </div>
               </section>
 
@@ -320,11 +325,11 @@ function App() {
             Learn more about Aspire<span className="visually-hidden"> (opens in new tab)</span>
           </a>
           <a 
-            href="https://github.com/dotnet/aspire" 
+            href="https://github.com/JMKangas/ElectricityAPI" 
             target="_blank" 
             rel="noopener noreferrer"
             className="github-link"
-            aria-label="View Aspire on GitHub (opens in new tab)"
+            aria-label="View this project on GitHub (opens in new tab)"
           >
             <img src="/github.svg" alt="" width="24" height="24" aria-hidden="true" />
             <span className="visually-hidden">GitHub</span>
