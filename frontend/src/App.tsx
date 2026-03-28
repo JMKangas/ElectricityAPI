@@ -16,8 +16,6 @@ echarts.use([
     SVGRenderer
 ]);
 
-//const ReactEChartsFixed = ReactECharts as unknown as React.FC<any>;
-
 interface WeatherForecast {
   date: string
   temperatureC: number
@@ -35,7 +33,7 @@ function App() {
     const [spotData, setSpotData] = useState<SpotPrice[]>([]);
     const [spotLoading, setSpotLoading] = useState(false);
     const [spotError, setSpotError] = useState<string | null>(null);
-    const [useHourly, setUseHourly] = useState(false); // <--- 15min vs hourly toggle
+    const [useHourly, setUseHourly] = useState(false);
 
 
     const [weatherData, setWeatherData] = useState<WeatherForecast[]>([])
@@ -49,9 +47,7 @@ function App() {
         setSpotError(null);
 
         try {
-            //const response = await fetch('/spotprice/cheap?vartit=96&aikaraja=2026-03-25');
 
-            // Build aikaraja = YYYY-MM-DD in local (UTC+2) time
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -236,7 +232,7 @@ function App() {
                                               },
                                               showSymbol: false,
 
-                                              // ⭐ HIGHLIGHT CURRENT TIME
+                                              // HIGHLIGHT CURRENT TIME
                                               markLine: {
                                                   symbol: "none",
                                                   lineStyle: {
@@ -244,12 +240,7 @@ function App() {
                                                       width: 2,
                                                   },
                                                   data: (function () {
-                                                      //const now = new Date();
 
-                                                      //// Convert to UTC+2
-                                                      //const utc2 = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
-                                                      // Round DOWN to nearest 15-min slot
                                                       const mins = utc2.getMinutes();
                                                       const rounded = Math.floor(mins / 15) * 15;
                                                       utc2.setMinutes(rounded);
@@ -284,11 +275,7 @@ function App() {
                   </div>
               </section>
 
-
-
-
-
-          
+         
         <section className="weather-section" aria-labelledby="weather-heading">
           <div className="card">
             <div className="section-header">
