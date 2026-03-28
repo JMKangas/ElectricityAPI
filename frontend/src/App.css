@@ -146,6 +146,8 @@
   margin: 0 auto;
   padding: 0rem 2rem 2rem;
   display: flex;
+  flex-direction: column;
+  gap: 2rem;
   justify-content: center;
   align-items: center;
 }
@@ -163,6 +165,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--card-inner-gap);
+}
+/* Ensure sections are full-width and center their cards */
+.spot-section,
+.weather-section {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.spot-section .card,
+.weather-section .card {
+    width: 100%;
+    max-width: 1200px;
 }
 
 /* Section styles */

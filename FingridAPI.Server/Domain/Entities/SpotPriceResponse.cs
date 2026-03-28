@@ -3,8 +3,8 @@
 
     public sealed class SpotPriceResponse
     {
-        public string? Aikaraja { get; set; }
-        public List<SpotPriceQuarter> Halvat_vartit { get; set; } = new();
+        public string? TimeLimit { get; set; }
+        public List<SpotPriceQuarter> CheapQuarters { get; set; } = new();
     }
 
 }

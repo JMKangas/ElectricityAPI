@@ -6,7 +6,6 @@ namespace FingridAPI.Server.Application.Services
     public sealed class FingridService
     {
         private readonly FingridApiClient _client;
-        private DatasetMetadata? _cachedMetadata;
 
         public FingridService(FingridApiClient client)
         {

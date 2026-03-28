@@ -67,8 +67,7 @@ api.MapGet("weatherforecast", () =>
 
 app.MapDefaultEndpoints();
 
-app.MapSpotPriceEndpoints();   // <-- Add this
-//app.MapDefaultEndpoints();
+app.MapSpotPriceEndpoints();
 app.MapDatasetEndpoints();
 
 app.UseFileServer();
