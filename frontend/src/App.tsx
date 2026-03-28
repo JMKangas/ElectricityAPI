@@ -2,7 +2,19 @@ import { useState, useEffect } from 'react'
 //import aspireLogo from '/Aspire.png'
 import jkLogo from '/jk-logo.png'
 import './App.css'
-import ReactECharts from 'echarts-for-react';
+import EChartsReact from 'echarts-for-react';
+import * as echarts from 'echarts/core';
+import { LineChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
+import { SVGRenderer } from 'echarts/renderers';
+
+echarts.use([
+    LineChart,
+    GridComponent,
+    TooltipComponent,
+    LegendComponent,
+    SVGRenderer
+]);
 
 //const ReactEChartsFixed = ReactECharts as unknown as React.FC<any>;
 
@@ -37,7 +49,17 @@ function App() {
         setSpotError(null);
 
         try {
-            const response = await fetch('/spotprice/cheap?vartit=96&aikaraja=2026-03-25');
+            //const response = await fetch('/spotprice/cheap?vartit=96&aikaraja=2026-03-25');
+
+            // Build aikaraja = YYYY-MM-DD in local (UTC+2) time
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, "0");
+            const day = String(now.getDate()).padStart(2, "0");
+            const aikaraja = `${year}-${month}-${day}`;
+
+            const response = await fetch(`/spotprice/cheap?vartit=96&aikaraja=${aikaraja}`);
+
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -114,18 +136,20 @@ function App() {
     })
   }
 
+    const utc2 = new Date();
+
   return (
     <div className="app-container">
       <header className="app-header">
-        <a 
-          href="https://aspire.dev" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          aria-label="Visit Aspire website (opens in new tab)"
-          className="logo-link"
-              >
-                  <img src={jkLogo} className="logo" alt="Aspire logo" />
-        </a>
+        {/*<a */}
+        {/*  href="https://aspire.dev" */}
+        {/*  target="_blank" */}
+        {/*  rel="noopener noreferrer"*/}
+        {/*  aria-label="Visit Aspire website (opens in new tab)"*/}
+        {/*  className="logo-link"*/}
+        {/*      >*/}
+        {/*          <img src={jkLogo} className="logo" alt="Aspire logo" />*/}
+        {/*</a>*/}
         <h1 className="app-title">Fingrid electricity app</h1>
         <p className="app-subtitle">Modern minimal api</p>
       </header>
@@ -135,10 +159,8 @@ function App() {
                   <div className="card">
                       <div className="section-header">
                           <h2 id="spot-heading" className="section-title">Electricity Spot Prices</h2>
-
                           <fieldset className="toggle-switch" aria-label="Spot resolution selection">
                               <legend className="visually-hidden">Time resolution</legend>
-
                               <button
                                   className={`toggle-option ${!useHourly ? 'active' : ''}`}
                                   onClick={() => setUseHourly(false)}
@@ -147,7 +169,6 @@ function App() {
                               >
                                   15 min
                               </button>
-
                               <button
                                   className={`toggle-option ${useHourly ? 'active' : ''}`}
                                   onClick={() => setUseHourly(true)}
@@ -166,6 +187,7 @@ function App() {
                               {spotLoading ? 'Loading...' : 'Refresh'}
                           </button>
                       </div>
+                      <h4 id="spot-heading">{utc2.toDateString()}</h4>
 
                       {spotError && <div className="error-message">{spotError}</div>}
 
@@ -178,22 +200,26 @@ function App() {
                       )}
                       {spotData.length > 0 && (
                           <div style={{ width: "100%", height: "300px" }}>
-                              <ReactECharts
+
+                              <EChartsReact
+                                  echarts={echarts}
                                   option={{
                                       tooltip: {
                                           trigger: 'axis',
                                           formatter: (params: any) => {
                                               const item = params[0];
                                               return `
-                            <strong>${item.axisValue}</strong><br/>
-                            Spot price: ${item.data} c/kWh
-                        `;
+              <strong>${item.axisValue}</strong><br/>
+              Spot price: ${item.data} c/kWh`;
                                           }
                                       },
                                       xAxis: {
                                           type: 'category',
                                           data: getDisplayedSpotData().map(x => x.aikaleima_suomi),
-                                          axisLabel: { fontSize: 10 }
+                                          axisLabel: {
+                                              fontSize: 10,
+                                              formatter: (value: string) => value.substring(11,16)
+                                          }
                                       },
                                       yAxis: {
                                           type: 'value',
@@ -202,20 +228,59 @@ function App() {
                                       series: [
                                           {
                                               data: getDisplayedSpotData().map(x => x.hinta),
-                                              type: 'line',
+                                              type: 'bar',
                                               smooth: true,
                                               lineStyle: {
                                                   width: 2,
                                                   color: '#ff7300'
                                               },
-                                              showSymbol: false
+                                              showSymbol: false,
+
+                                              // ⭐ HIGHLIGHT CURRENT TIME
+                                              markLine: {
+                                                  symbol: "none",
+                                                  lineStyle: {
+                                                      color: "#00ffff",
+                                                      width: 2,
+                                                  },
+                                                  data: (function () {
+                                                      //const now = new Date();
+
+                                                      //// Convert to UTC+2
+                                                      //const utc2 = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+                                                      // Round DOWN to nearest 15-min slot
+                                                      const mins = utc2.getMinutes();
+                                                      const rounded = Math.floor(mins / 15) * 15;
+                                                      utc2.setMinutes(rounded);
+                                                      utc2.setSeconds(0);
+                                                      utc2.setMilliseconds(0);
+
+                                                      const pad = (n: number) => String(n).padStart(2, "0");
+
+                                                      const currentSlot =
+                                                          `${utc2.getFullYear()}-${pad(utc2.getMonth() + 1)}-${pad(utc2.getDate())}T` +
+                                                          `${pad(utc2.getHours())}:${pad(utc2.getMinutes())}`;
+
+                                                      const displayed = getDisplayedSpotData();
+                                                      const categories = displayed.map(x => x.aikaleima_suomi);
+
+                                                      const highlightIndex = categories.indexOf(currentSlot);
+
+                                                      return highlightIndex >= 0
+                                                          ? [{ xAxis: categories[highlightIndex] }]
+                                                          : [];
+                                                  })()
+                                              }
                                           }
                                       ]
                                   }}
-                                  style={{ height: '100%', width: '100%' }}
+                                  opts={{ renderer: 'svg' }}
+                                  style={{ height: "100%", width: "100%" }}
                               />
                           </div>
                       )}
+
                   </div>
               </section>
 
@@ -232,15 +297,6 @@ function App() {
                 <fieldset className="toggle-switch" aria-label="Temperature unit selection">
                   <legend className="visually-hidden">Temperature unit</legend>
                   <button 
-                    className={`toggle-option ${!useCelsius ? 'active' : ''}`}
-                    onClick={() => setUseCelsius(false)}
-                    aria-pressed={!useCelsius}
-                    type="button"
-                  >
-                    <span aria-hidden="true">°F</span>
-                    <span className="visually-hidden">Fahrenheit</span>
-                  </button>
-                  <button 
                     className={`toggle-option ${useCelsius ? 'active' : ''}`}
                     onClick={() => setUseCelsius(true)}
                     aria-pressed={useCelsius}
@@ -248,6 +304,15 @@ function App() {
                   >
                     <span aria-hidden="true">°C</span>
                     <span className="visually-hidden">Celsius</span>
+                  </button>
+                  <button 
+                    className={`toggle-option ${!useCelsius ? 'active' : ''}`}
+                    onClick={() => setUseCelsius(false)}
+                    aria-pressed={!useCelsius}
+                    type="button"
+                  >
+                    <span aria-hidden="true">°F</span>
+                    <span className="visually-hidden">Fahrenheit</span>
                   </button>
                 </fieldset>
                 <button 
@@ -320,9 +385,10 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <nav aria-label="Footer navigation">
-          <a href="https://aspire.dev" target="_blank" rel="noopener noreferrer">
-            Learn more about Aspire<span className="visually-hidden"> (opens in new tab)</span>
+              <nav aria-label="Footer navigation">
+                  <img src={jkLogo} className="logo" alt="Aspire logo" />
+          <a href="https://github.com/JMKangas/ElectricityAPI" target="_blank" rel="noopener noreferrer">
+            Learn more about this project<span className="visually-hidden"> (opens in new tab)</span>
           </a>
           <a 
             href="https://github.com/JMKangas/ElectricityAPI" 
