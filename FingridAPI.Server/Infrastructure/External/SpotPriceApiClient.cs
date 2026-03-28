@@ -21,10 +21,20 @@ namespace FingridAPI.Server.Infrastructure.External
 
             var response = await _http.GetAsync(url);
             response.EnsureSuccessStatusCode();
-
             var result = await response.Content.ReadFromJsonAsync<List<CheapSpotPrice>>();
 
+            if (result is not null && result.Any())
+            {
+                result = result
+                    .OrderBy(x => DateTime.Parse(x.aikaleima_utc))
+                    .ToList();
+            }
+
             return result ?? new List<CheapSpotPrice>();
+            //var result = await response.Content.ReadFromJsonAsync<List<CheapSpotPrice>>();
+            //if (result.Any())
+            //    result.OrderBy(o => o.aikaleima_utc);
+            //return result ?? new List<CheapSpotPrice>();
         }
 
     }
