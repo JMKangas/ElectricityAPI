@@ -20,10 +20,6 @@ The backend will use PostgreSQL for storing historical grid and price data. The 
 
 This app is under development; backend API is ready for testing.
 
-# Clone the repo
-git clone https://github.com/yourusername/ElectricityAPI.git
-cd ElectricityAPI
-
 # Run backend API
 dotnet run --project ElectricityAPI
 
