@@ -1,0 +1,78 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      ########################################
+      # CHECKOUT REPOSITORY
+      ########################################
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      ########################################
+      # FRONTEND BUILD
+      ########################################
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      ########################################
+      # BACKEND BUILD (.NET 10)
+      ########################################
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish backend
+        working-directory: ./FingridAPI.Server
+        run: dotnet publish -c Release -o out
+
+      ########################################
+      # SET UP SSH FOR DEPLOYMENT
+      ########################################
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEV_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf "Host vps\n  HostName ${{ secrets.VPS_IP }}\n  User ${{ secrets.VPS_USER }}\n  Port ${{ secrets.SSH_PORT }}\n  IdentityFile ~/.ssh/id_ed25519\n  StrictHostKeyChecking no\n" >> ~/.ssh/config
+
+      ########################################
+      # DEPLOY FRONTEND
+      ########################################
+      - name: Upload frontend
+        run: |
+          ssh vps "rm -rf ${{ secrets.VPS_FRONTEND_PATH }}/*"
+          scp -r frontend/dist/* vps:${{ secrets.VPS_FRONTEND_PATH }}/
+
+      ########################################
+      # DEPLOY BACKEND
+      ########################################
+      - name: Upload backend
+        run: |
+          ssh vps "rm -rf ${{ secrets.VPS_BACKEND_PATH }}/*"
+          scp -r FingridAPI.Server/out/* vps:${{ secrets.VPS_BACKEND_PATH }}/
+
+      ########################################
+      # RESTART SYSTEMD SERVICE
+      ########################################
+      - name: Restart backend service
+        run: |
+          ssh vps "sudo systemctl restart ${{ secrets.SYSTEMD_SERVICE }}"
