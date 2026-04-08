@@ -1,5 +1,5 @@
 import React from 'react'
-import jkLogo from '../assets/jkLogo.svg'
+import jkLogo from '../public/jk-logo.png'
 
 const Footer = () => {
   return (
