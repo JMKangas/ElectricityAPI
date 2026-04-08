@@ -1,5 +1,6 @@
 using FingridAPI.Server.API.Endpoints;
 using FingridAPI.Server.Application.Services;
+using FingridAPI.Server.Endpoints;
 using FingridAPI.Server.Infrastructure.External;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +34,9 @@ builder.Services.AddHttpClient<SpotPriceApiClient>(client =>
 {
     client.BaseAddress = new Uri("https://www.sahkohinta-api.fi/api/vartti/v1/");
 });
+
+builder.Services.AddHttpClient<WeatherService>();
+
 // REGISTER THE SERVICE (required)
 builder.Services.AddScoped<FingridService>();
 builder.Services.AddScoped<SpotPriceService>();
@@ -69,9 +73,10 @@ app.MapDefaultEndpoints();
 
 app.MapSpotPriceEndpoints();
 app.MapDatasetEndpoints();
+//Weather
+//app.MapWeatherEndpoints();
 
 app.UseFileServer();
-
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
