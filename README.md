@@ -22,9 +22,9 @@ This app is under development; backend API is ready for testing.
 
 # Run backend API
 
-dotnet run --project ElectricityAPI or start http
+dotnet run --project ElectricityAPI or start http.
 
-🧩 API Endpoints (Planned)
+🧩 API Endpoints (some ready)
 GET /api/grid/status — Current status of the electricity grid
 GET /api/price/hourly — Hourly electricity prices
 GET /api/history — Historical electricity data (future)
