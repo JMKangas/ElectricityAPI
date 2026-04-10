@@ -1,8 +1,0 @@
-<Solution>
-  <Project Path="FingridAPI.AppHost/FingridAPI.AppHost.csproj" />
-  <Project Path="FingridAPI.Server/FingridAPI.Server.csproj" />
-  <Project Path="frontend/frontend.esproj">
-    <Build />
-    <Deploy />
-  </Project>
-</Solution>
