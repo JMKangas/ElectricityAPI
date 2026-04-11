@@ -9,5 +9,6 @@ var webfrontend = builder.AddViteApp("webfrontend", "../frontend")
     .WaitFor(server);
 
 server.PublishWithContainerFiles(webfrontend, "wwwroot");
-
+builder.AddPostgres("postgres")
+       .AddDatabase("appdb");
 builder.Build().Run();
