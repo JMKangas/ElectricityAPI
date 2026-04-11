@@ -2,5 +2,6 @@
   <PropertyGroup>
     <ShouldRunNpmInstall>false</ShouldRunNpmInstall>
     <ShouldRunBuildScript>false</ShouldRunBuildScript>
+	<IsDesignTimeBuild>false</IsDesignTimeBuild>
   </PropertyGroup>
 </Project>
