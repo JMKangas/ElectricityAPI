@@ -1,7 +1,9 @@
 using FingridAPI.Server.API.Endpoints;
 using FingridAPI.Server.Application.Services;
 using FingridAPI.Server.Endpoints;
+using FingridAPI.Server.Extensions;
 using FingridAPI.Server.Infrastructure.External;
+using FingridAPI.Server.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,11 +37,16 @@ builder.Services.AddHttpClient<SpotPriceApiClient>(client =>
     client.BaseAddress = new Uri("https://www.sahkohinta-api.fi/api/vartti/v1/");
 });
 
-builder.Services.AddHttpClient<WeatherService>();
+//POSTGRE SQL DATABASE
+var apiKey = builder.Configuration["API_KEY"];
+
+builder.AddNpgsqlDbContext<FingridContext>("appdb");
 
 // REGISTER THE SERVICE (required)
 builder.Services.AddScoped<FingridService>();
 builder.Services.AddScoped<SpotPriceService>();
+
+builder.Services.AddWeather();
 
 var app = builder.Build();
 
@@ -74,7 +81,7 @@ app.MapDefaultEndpoints();
 app.MapSpotPriceEndpoints();
 app.MapDatasetEndpoints();
 //Weather
-//app.MapWeatherEndpoints();
+app.MapWeatherEndpoints();
 
 app.UseFileServer();
 app.Run();

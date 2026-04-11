@@ -1,10 +1,6 @@
 using FingridAPI.Server.Infrastructure.External;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -12,7 +8,7 @@ using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
 
-namespace Microsoft.Extensions.Hosting;
+namespace FingridAPI.Server.Extensions;
 
 // Adds common Aspire services: service discovery, resilience, health checks, and OpenTelemetry.
 // This project should be referenced by each service project in your solution.
@@ -57,12 +53,6 @@ public static class Extensions
                 MinimumThroughput = 10,
                 BreakDuration = TimeSpan.FromSeconds(10)
             });
-        });
-
-        builder.Services.AddHttpClient<FingridApiClient>("fingrid", client =>
-        {
-            client.BaseAddress = new Uri("https://api.fingrid.fi/v1/");
-            client.DefaultRequestHeaders.Add("x-api-key", builder.Configuration["Fingrid:ApiKey"]);
         });
 
         return builder;
