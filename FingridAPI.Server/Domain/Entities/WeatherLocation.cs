@@ -1,16 +1,25 @@
-﻿namespace FingridAPI.Server.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-public class WeatherLocation
+namespace FingridAPI.Server.Domain.Entities
 {
-    public Guid Id { get; set; }
+    public class WeatherLocation
+    {
+        [Column("id")]
+        public Guid Id { get; set; }
 
-    public string Name { get; set; } = null!;
+        [Column("name")]
+        public string Name { get; set; } = null!;
 
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
+        [Column("latitude")]
+        public double Latitude { get; set; }
 
-    public string? CountryCode { get; set; }
+        [Column("longitude")]
+        public double Longitude { get; set; }
 
-    public DateTimeOffset CreatedAt { get; set; }
+        [Column("country_code")]
+        public string? CountryCode { get; set; }
 
+        [Column("created_at")]
+        public DateTimeOffset CreatedAt { get; set; }
+    }
 }

@@ -1,4 +1,6 @@
-﻿using FingridAPI.Server.Infrastructure.Persistence;
+﻿using FingridAPI.Server.Domain.Entities;
+using FingridAPI.Server.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Polly;
 using Polly.Registry;
 
@@ -18,7 +20,6 @@ namespace FingridAPI.Server.Infrastructure.Repositories
             // "ef-db" is the key you registered your pipeline with
             _pipeline = pipelines.GetPipeline("ef-db");
         }
-
 
         //public async Task<List<Item>> GetItemsAsync()
         //{
