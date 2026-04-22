@@ -1,140 +1,219 @@
-import { useState, useEffect } from 'react'
-//import aspireLogo from '/Aspire.png'
-import jkLogo from '/jk-logo.png'
-import Header from './Header'
-import Footer from './Footer'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Header from './components/Header'
+import Footer from './components/Footer'
 import './App.css'
 import EChartsReact from 'echarts-for-react'
 import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
+    GridComponent,
+    TooltipComponent,
+    LegendComponent,
 } from 'echarts/components'
 import { SVGRenderer } from 'echarts/renderers'
+import WeatherSection from './components/WeatherSection'
+import type { Forecast } from './types/weather'
+import LocationPicker from './components/LocationPicker'
+import type { Location } from './components/LocationPicker'
 
 echarts.use([
-  LineChart,
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-  SVGRenderer,
+    LineChart,
+    GridComponent,
+    TooltipComponent,
+    LegendComponent,
+    SVGRenderer,
 ])
 
-interface WeatherForecast {
-  date: string
-  temperatureC: number
-  temperatureF: number
-  summary: string
+interface SpotPrice {
+    aikaleima_suomi: string
+    aikaleima_utc: string
+    hinta: number
 }
 
-interface SpotPrice {
-  aikaleima_suomi: string
-  aikaleima_utc: string
-  hinta: number
+type WeatherCityDto = {
+    id: string
+    name: string
 }
+
+const DEFAULT_WEATHER_ID = '3f2c1c8e-9b1d-4b0e-8a9f-2c1d4f9a7b33'
+const DEFAULT_CITY = 'Helsinki'
 
 function App() {
-  const [spotData, setSpotData] = useState<SpotPrice[]>([])
-  const [spotLoading, setSpotLoading] = useState(false)
-  const [spotError, setSpotError] = useState<string | null>(null)
-  const [useHourly, setUseHourly] = useState(false)
+    // ELECTRICITY (no cancellation)
+    const [spotData, setSpotData] = useState<SpotPrice[]>([])
+    const [spotLoading, setSpotLoading] = useState(false)
+    const [spotError, setSpotError] = useState<string | null>(null)
+    const [useHourly, setUseHourly] = useState(false)
 
-  const [weatherData, setWeatherData] = useState<WeatherForecast[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [useCelsius, setUseCelsius] = useState(false)
+    // WEATHER
+    const [weatherData, setWeatherData] = useState<Forecast[]>([])
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
-  //ELECTRICITY
-  const fetchSpotPrices = async () => {
-    setSpotLoading(true)
-    setSpotError(null)
+    // Selected location
+    const [selectedId, setSelectedId] = useState<string>(DEFAULT_WEATHER_ID)
+    const [selectedCity, setSelectedCity] = useState<string>(DEFAULT_CITY)
 
-    try {
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = String(now.getMonth() + 1).padStart(2, '0')
-      const day = String(now.getDate()).padStart(2, '0')
-      const aikaraja = `${year}-${month}-${day}`
+    // Locations + suggestions UI
+    const [locations, setLocations] = useState<WeatherCityDto[]>([])
+    //const [searchTerm, setSearchTerm] = useState<string>('')
+    //const [suggestions, setSuggestions] = useState<WeatherCityDto[]>([])
+    //const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false)
+    //const [highlightIndex, setHighlightIndex] = useState<number>(-1)
 
-      const response = await fetch(
-        `/spotprice/cheap?vartit=96&aikaraja=${aikaraja}`
-      )
+    // Controllers
+    const weatherControllerRef = useRef<AbortController | null>(null)
+    const locationsControllerRef = useRef<AbortController | null>(null)
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+    // --- Spot prices (unchanged, no cancellation) ---
+    const fetchSpotPrices = useCallback(async () => {
+        setSpotLoading(true)
+        setSpotError(null)
 
-      const data: SpotPrice[] = await response.json()
-      setSpotData(data)
-    } catch (err) {
-      setSpotError(
-        err instanceof Error ? err.message : 'Failed to fetch spot prices'
-      )
-      console.error('Error fetching spot prices:', err)
-    } finally {
-      setSpotLoading(false)
+        try {
+            const now = new Date()
+            const year = now.getFullYear()
+            const month = String(now.getMonth() + 1).padStart(2, '0')
+            const day = String(now.getDate()).padStart(2, '0')
+            const aikaraja = `${year}-${month}-${day}`
+
+            const response = await fetch(
+                `/api/spotprice/cheap?vartit=96&aikaraja=${aikaraja}`
+            )
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            const data: SpotPrice[] = await response.json()
+            setSpotData(data)
+        } catch (err) {
+            setSpotError(
+                err instanceof Error ? err.message : 'Failed to fetch spot prices'
+            )
+            console.error('Error fetching spot prices:', err)
+        } finally {
+            setSpotLoading(false)
+        }
+    }, [])
+
+    // --- Fetch all locations (with cancellation) ---
+    const fetchAllLocations = useCallback(async () => {
+        locationsControllerRef.current?.abort()
+        const controller = new AbortController()
+        locationsControllerRef.current = controller
+
+        try {
+            const res = await fetch('/api/weather_locations', { signal: controller.signal })
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const data = await res.json()
+
+            // Normalize keys (backend might return PascalCase)
+            const normalized: WeatherCityDto[] = (data as any[]).map((d) => ({
+                id: (d.id ?? d.Id ?? '').toString(),
+                name: d.name ?? d.Name ?? '',
+            }))
+
+            setLocations(normalized)
+        } catch (err: any) {
+            if (err?.name === 'AbortError') return
+            console.error('Failed to fetch locations:', err)
+        }
+    }, [])
+
+    // --- Fetch weather (cancellable) ---
+    const fetchWeatherForecast = useCallback(
+        async (idParam?: string, cityParam?: string) => {
+            // allow explicit params (used on selection) or fall back to state
+            const id = idParam ?? selectedId
+            const city = cityParam ?? selectedCity
+
+            weatherControllerRef.current?.abort()
+            const controller = new AbortController()
+            weatherControllerRef.current = controller
+
+            setLoading(true)
+            setError(null)
+
+            try {
+                const url = `/api/weather?id=${encodeURIComponent(id)}&city=${encodeURIComponent(city)}`
+                const response = await fetch(url, { signal: controller.signal })
+
+                if (!response.ok) {
+                    let msg = `HTTP error! status: ${response.status}`
+                    try {
+                        const body = await response.json()
+                        if (body?.message) msg = body.message
+                    } catch { }
+                    throw new Error(msg)
+                }
+                console.log(city)
+                const data = await response.json()
+
+                const mapped: Forecast[] = Array.isArray(data.forecast)
+                    ? data.forecast.map((f: any) => ({
+                        date: f.time ?? f.date ?? new Date().toISOString(),
+                        summary:
+                            f.summary ??
+                            `Wind ${f.windSpeed ?? 'N/A'} m/s, Humidity ${f.humidity ?? 'N/A'}%`,
+                        temperatureC:
+                            typeof f.temperature === 'number' ? f.temperature : f.temperatureC ?? 0,
+                        temperatureF:
+                            typeof f.temperature === 'number'
+                                ? Math.round((f.temperature * 1.8 + 32) * 10) / 10
+                                : f.temperatureF ?? Math.round(((f.temperatureC ?? 0) * 1.8 + 32) * 10) / 10,
+                    }))
+                    : []
+
+                setWeatherData(mapped)
+            } catch (err: any) {
+                if (err?.name === 'AbortError') return
+                setError(err instanceof Error ? err.message : 'Failed to fetch weather data')
+                console.error('Error fetching weather forecast:', err)
+            } finally {
+                setLoading(false)
+            }
+        },
+        [selectedId, selectedCity]
+    )
+
+    // --- Initial load ---
+    useEffect(() => {
+        fetchAllLocations()
+        fetchSpotPrices()
+        // initial weather for default selection
+        fetchWeatherForecast(DEFAULT_WEATHER_ID, DEFAULT_CITY)
+
+        return () => {
+            weatherControllerRef.current?.abort()
+            locationsControllerRef.current?.abort()
+        }
+    }, [fetchAllLocations, fetchSpotPrices, fetchWeatherForecast])
+
+    // --- Utilities ---
+    const getDisplayedSpotData = () => {
+        if (!useHourly) return spotData
+
+        const hourly: SpotPrice[] = []
+        for (let i = 0; i < spotData.length; i += 4) {
+            const slice = spotData.slice(i, i + 4)
+            const avgPrice = slice.reduce((acc, x) => acc + x.hinta, 0) / slice.length
+
+            hourly.push({
+                aikaleima_suomi: slice[0].aikaleima_suomi,
+                aikaleima_utc: slice[0].aikaleima_utc,
+                hinta: Number(avgPrice.toFixed(3)),
+            })
+        }
+        return hourly
     }
-  }
 
-  //FORECAST
-  const fetchWeatherForecast = async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/weatherforecast')
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data: WeatherForecast[] = await response.json()
-      setWeatherData(data)
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to fetch weather data'
-      )
-      console.error('Error fetching weather forecast:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchSpotPrices()
-    fetchWeatherForecast()
-  }, [])
-
-  //Electricity data
-  const getDisplayedSpotData = () => {
-    if (!useHourly) return spotData
-
-    // Hourly: group every 4 x 15min entries
-    const hourly: SpotPrice[] = []
-
-    for (let i = 0; i < spotData.length; i += 4) {
-      const slice = spotData.slice(i, i + 4)
-      const avgPrice = slice.reduce((acc, x) => acc + x.hinta, 0) / slice.length
-
-      hourly.push({
-        aikaleima_suomi: slice[0].aikaleima_suomi,
-        aikaleima_utc: slice[0].aikaleima_utc,
-        hinta: Number(avgPrice.toFixed(3)),
-      })
-    }
-
-    return hourly
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
+    const formatDate = (dateString: string) =>
+        new Date(dateString).toLocaleDateString(undefined, {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+        })
 
   const utc2 = new Date()
 
@@ -281,175 +360,24 @@ function App() {
                 />
               </div>
             )}
-          </div>
+                  </div>
+
         </section>
+              <WeatherSection
+                  weatherData={weatherData}
+                  loading={loading}
+                  error={error}
+                  fetchWeatherForecast={() => fetchWeatherForecast(selectedId, selectedCity)}
+                  locations={locations}
+                  onSelectLocation={(loc) => {
+                      setSelectedId(loc.id)
+                      setSelectedCity(loc.name)
+                      fetchWeatherForecast(loc.id, loc.name)
+                  }}
+              />
 
-        <section className="weather-section" aria-labelledby="weather-heading">
-          <div className="card">
-            <div className="section-header">
-              <h2 id="weather-heading" className="section-title">
-                Weather Forecast
-              </h2>
-              <div className="header-actions">
-                <fieldset
-                  className="toggle-switch"
-                  aria-label="Temperature unit selection"
-                >
-                  <legend className="visually-hidden">Temperature unit</legend>
-                  <button
-                    className={`toggle-option ${useCelsius ? 'active' : ''}`}
-                    onClick={() => setUseCelsius(true)}
-                    aria-pressed={useCelsius}
-                    type="button"
-                  >
-                    <span aria-hidden="true">°C</span>
-                    <span className="visually-hidden">Celsius</span>
-                  </button>
-                  <button
-                    className={`toggle-option ${!useCelsius ? 'active' : ''}`}
-                    onClick={() => setUseCelsius(false)}
-                    aria-pressed={!useCelsius}
-                    type="button"
-                  >
-                    <span aria-hidden="true">°F</span>
-                    <span className="visually-hidden">Fahrenheit</span>
-                  </button>
-                </fieldset>
-                <button
-                  className="refresh-button"
-                  onClick={fetchWeatherForecast}
-                  disabled={loading}
-                  aria-label={
-                    loading
-                      ? 'Loading weather forecast'
-                      : 'Refresh weather forecast'
-                  }
-                  type="button"
-                >
-                  <svg
-                    className={`refresh-icon ${loading ? 'spinning' : ''}`}
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden="true"
-                    focusable="false"
-                  >
-                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-                  </svg>
-                  <span>{loading ? 'Loading...' : 'Refresh'}</span>
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="error-message" role="alert" aria-live="polite">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
-
-            {loading && weatherData.length === 0 && (
-              <div
-                className="loading-skeleton"
-                role="status"
-                aria-live="polite"
-                aria-label="Loading weather data"
-              >
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="skeleton-row" aria-hidden="true" />
-                ))}
-                <span className="visually-hidden">
-                  Loading weather forecast data...
-                </span>
-              </div>
-            )}
-
-            {weatherData.length > 0 && (
-              <div className="weather-grid">
-                {weatherData.map((forecast, index) => (
-                  <article
-                    key={index}
-                    className="weather-card"
-                    aria-label={`Weather for ${formatDate(forecast.date)}`}
-                  >
-                    <h3 className="weather-date">
-                      <time dateTime={forecast.date}>
-                        {formatDate(forecast.date)}
-                      </time>
-                    </h3>
-                    <p className="weather-summary">{forecast.summary}</p>
-                    <div
-                      className="weather-temps"
-                      aria-label={`Temperature: ${
-                        useCelsius
-                          ? forecast.temperatureC
-                          : forecast.temperatureF
-                      } degrees ${useCelsius ? 'Celsius' : 'Fahrenheit'}`}
-                    >
-                      <div className="temp-group">
-                        <span className="temp-value" aria-hidden="true">
-                          {useCelsius
-                            ? forecast.temperatureC
-                            : forecast.temperatureF}
-                          °
-                        </span>
-                        <span className="temp-unit" aria-hidden="true">
-                          {useCelsius ? 'Celsius' : 'Fahrenheit'}
-                        </span>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
       </main>
       <Footer />
-      {/* <footer className="app-footer">
-        <nav aria-label="Footer navigation">
-          <img src={jkLogo} className="logo" alt="Aspire logo" />
-          <a
-            href="https://github.com/JMKangas/ElectricityAPI"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn more about this project
-            <span className="visually-hidden"> (opens in new tab)</span>
-          </a>
-          <a
-            href="https://github.com/JMKangas/ElectricityAPI"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="github-link"
-            aria-label="View this project on GitHub (opens in new tab)"
-          >
-            <img
-              src="/github.svg"
-              alt=""
-              width="24"
-              height="24"
-              aria-hidden="true"
-            />
-            <span className="visually-hidden">GitHub</span>
-          </a>
-        </nav>
-      </footer> */}
     </div>
   )
 }

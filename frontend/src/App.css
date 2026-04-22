@@ -806,4 +806,15 @@
   outline: 3px solid var(--accent-gradient-end);
   outline-offset: 2px;
 }
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
