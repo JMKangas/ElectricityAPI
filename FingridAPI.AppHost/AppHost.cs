@@ -1,3 +1,4 @@
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 var server = builder.AddProject<Projects.FingridAPI_Server>("server")
@@ -9,6 +10,4 @@ var webfrontend = builder.AddViteApp("webfrontend", "../frontend")
     .WaitFor(server);
 
 server.PublishWithContainerFiles(webfrontend, "wwwroot");
-builder.AddPostgres("postgres")
-       .AddDatabase("appdb");
 builder.Build().Run();
