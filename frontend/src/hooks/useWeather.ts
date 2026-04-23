@@ -20,7 +20,7 @@ export function useWeather(initialId: string, initialCity: string) {
         setError(null)
 
         try {
-            const url = `/weather?id=${encodeURIComponent(idRef.current)}&city=${encodeURIComponent(cityRef.current)}`
+            const url = `/api/weather?id=${encodeURIComponent(idRef.current)}&city=${encodeURIComponent(cityRef.current)}`
             const res = await fetch(url, { signal: controller.signal })
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
