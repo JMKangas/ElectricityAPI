@@ -5,6 +5,7 @@ using FingridAPI.Server.Extensions;
 using FingridAPI.Server.Infrastructure.External;
 using FingridAPI.Server.Infrastructure.Persistence;
 using FingridAPI.Server.Infrastructure.Repositories;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -67,9 +68,15 @@ builder.Services.AddScoped<WeatherLocationRepository>();
 //var testi = builder.Configuration.GetConnectionString("appdb");
 var app = builder.Build();
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+app.UseRouting();
+app.UseExceptionHandler();
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
-
+// Configure the HTTP req
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
