@@ -33,9 +33,9 @@ export default function LocationPicker({
     const listRef = useRef<HTMLUListElement | null>(null)
     const inputRef = useRef<HTMLInputElement | null>(null)
 
-    useEffect(() => {
-        setInput(value)
-    }, [value])
+    //useEffect(() => {
+    //    setInput(value)
+    //}, [value])
 
     useEffect(() => {
         if (!input) {

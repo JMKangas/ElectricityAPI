@@ -25,14 +25,38 @@ export function useWeather(initialId: string, initialCity: string) {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
 
+            //const mapped: Forecast[] = Array.isArray(data.forecast)
+            //    ? data.forecast.map((f: any) => ({
+            //        date: f.time ?? f.date ?? new Date().toISOString(),
+            //        summary: f.summary ?? `Wind ${f.windSpeed ?? 'N/A'} m/s, Humidity ${f.humidity ?? 'N/A'}%`,
+            //        temperatureC: typeof f.temperature === 'number' ? f.temperature : (f.temperatureC ?? 0),
+            //        temperatureF: typeof f.temperature === 'number'
+            //            ? Math.round((f.temperature * 1.8 + 32) * 10) / 10
+            //            : (f.temperatureF ?? Math.round(((f.temperatureC ?? 0) * 1.8 + 32) * 10) / 10),
+            //    }))
+            //    : []
             const mapped: Forecast[] = Array.isArray(data.forecast)
                 ? data.forecast.map((f: any) => ({
                     date: f.time ?? f.date ?? new Date().toISOString(),
-                    summary: f.summary ?? `Wind ${f.windSpeed ?? 'N/A'} m/s, Humidity ${f.humidity ?? 'N/A'}%`,
-                    temperatureC: typeof f.temperature === 'number' ? f.temperature : (f.temperatureC ?? 0),
-                    temperatureF: typeof f.temperature === 'number'
-                        ? Math.round((f.temperature * 1.8 + 32) * 10) / 10
-                        : (f.temperatureF ?? Math.round(((f.temperatureC ?? 0) * 1.8 + 32) * 10) / 10),
+
+                    summary:
+                        f.summary ??
+                        `Wind ${f.windSpeed ?? 'N/A'} m/s, Humidity ${f.humidity ?? 'N/A'}%`,
+
+                    temperatureC:
+                        typeof f.temperature === 'number'
+                            ? f.temperature
+                            : f.temperatureC ?? 0,
+
+                    temperatureF:
+                        typeof f.temperature === 'number'
+                            ? Math.round((f.temperature * 1.8 + 32) * 10) / 10
+                            : f.temperatureF ??
+                            Math.round(((f.temperatureC ?? 0) * 1.8 + 32) * 10) / 10,
+
+                    // ✅ Add these two fields
+                    wind: f.windSpeed ?? 0,
+                    humidity: f.humidity ?? 0,
                 }))
                 : []
 

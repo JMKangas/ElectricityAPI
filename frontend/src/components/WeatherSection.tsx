@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { Forecast } from '../types/weather'
 import LocationPicker from './LocationPicker'
 import type { Location } from './LocationPicker'
+import TimeFormatter from './TimeFormatter'
+import MetricBox from './MetricBox'
 
 type Props = {
     weatherData: Forecast[]
@@ -21,6 +23,7 @@ const WeatherSection = ({
     onSelectLocation,
 }: Props) => {
     const [useCelsius, setUseCelsius] = useState(true)
+    console.log("loading:", loading)
 
     return (
         <section className="weather-section" aria-labelledby="weather-heading">
@@ -85,8 +88,7 @@ const WeatherSection = ({
                                     : 'Refresh weather forecast'
                             }
                         >
-                            <svg
-                                className={`refresh-icon ${loading ? 'spinning' : ''}`}
+                            <svg className={`refresh-icon ${loading ? 'spinning' : 'idle'}`}
                                 width="20"
                                 height="20"
                                 viewBox="0 0 24 24"
@@ -127,32 +129,47 @@ const WeatherSection = ({
                 )}
 
                 {/* Grid */}
-                {weatherData.length > 0 && (
-                    <div className="weather-grid">
-                        {weatherData.map((forecast) => (
-                            <article
-                                key={forecast.date}
-                                className="weather-card"
-                                aria-label={`Weather for ${forecast.date}`}
-                            >
-                                <h3 className="weather-date">
-                                    <time dateTime={forecast.date}>{forecast.date}</time>
-                                </h3>
+                {weatherData.length > 0 && (() => {
+                    const forecast = weatherData[0]
 
-                                <p className="weather-summary">{forecast.summary}</p>
-
-                                <div className="weather-temps">
-                                    <span className="temp-value">
-                                        {useCelsius ? forecast.temperatureC : forecast.temperatureF}°
-                                    </span>
-                                    <span className="temp-unit">{useCelsius ? 'C' : 'F'}</span>
-                                </div>
+                    return (
+                        <div className="weather-grid">
+                            <article className="weather-card">
+                                <MetricBox
+                                    label="Time"
+                                    value={<TimeFormatter iso={forecast.date} />}
+                                />
                             </article>
-                        ))}
-                    </div>
-                )}
+
+                            <article className="weather-card">
+                                <MetricBox
+                                    label="Wind"
+                                    value={`${forecast.wind} m/s`}
+                                />
+                            </article>
+
+                            <article className="weather-card">
+                                <MetricBox
+                                    label="Humidity"
+                                    value={`${forecast.humidity}%`}
+                                />
+                            </article>
+
+                            <article className="weather-card">
+                                <MetricBox
+                                    label="Temp"
+                                    value={`${useCelsius ? forecast.temperatureC : forecast.temperatureF
+                                        }°`}
+                                />
+                            </article>
+                        </div>
+                    )
+                })()}
+
+
             </div>
         </section>
+
     )
 }
 

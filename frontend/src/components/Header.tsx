@@ -10,7 +10,7 @@ const Header = () => {
       {/*      >*/}
       {/*          <img src={jkLogo} className="logo" alt="Aspire logo" />*/}
       {/*</a>*/}
-      <h1 className="app-title">Fingrid electricity app</h1>
+      <h1 className="app-title">Electricity and forecast app</h1>
       <p className="app-subtitle">Modern minimal api</p>
     </header>
   )

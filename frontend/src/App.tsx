@@ -13,8 +13,6 @@ import {
 import { SVGRenderer } from 'echarts/renderers'
 import WeatherSection from './components/WeatherSection'
 import type { Forecast } from './types/weather'
-import LocationPicker from './components/LocationPicker'
-import type { Location } from './components/LocationPicker'
 
 echarts.use([
     LineChart,
@@ -56,10 +54,6 @@ function App() {
 
     // Locations + suggestions UI
     const [locations, setLocations] = useState<WeatherCityDto[]>([])
-    //const [searchTerm, setSearchTerm] = useState<string>('')
-    //const [suggestions, setSuggestions] = useState<WeatherCityDto[]>([])
-    //const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false)
-    //const [highlightIndex, setHighlightIndex] = useState<number>(-1)
 
     // Controllers
     const weatherControllerRef = useRef<AbortController | null>(null)
@@ -153,15 +147,25 @@ function App() {
                 const mapped: Forecast[] = Array.isArray(data.forecast)
                     ? data.forecast.map((f: any) => ({
                         date: f.time ?? f.date ?? new Date().toISOString(),
+
                         summary:
                             f.summary ??
                             `Wind ${f.windSpeed ?? 'N/A'} m/s, Humidity ${f.humidity ?? 'N/A'}%`,
+
                         temperatureC:
-                            typeof f.temperature === 'number' ? f.temperature : f.temperatureC ?? 0,
+                            typeof f.temperature === 'number'
+                                ? f.temperature
+                                : f.temperatureC ?? 0,
+
                         temperatureF:
                             typeof f.temperature === 'number'
                                 ? Math.round((f.temperature * 1.8 + 32) * 10) / 10
-                                : f.temperatureF ?? Math.round(((f.temperatureC ?? 0) * 1.8 + 32) * 10) / 10,
+                                : f.temperatureF ??
+                                Math.round(((f.temperatureC ?? 0) * 1.8 + 32) * 10) / 10,
+
+                        // ⭐ REQUIRED FIELDS
+                        wind: f.windSpeed ?? 0,
+                        humidity: f.humidity ?? 0,
                     }))
                     : []
 
@@ -181,14 +185,14 @@ function App() {
     useEffect(() => {
         fetchAllLocations()
         fetchSpotPrices()
-        // initial weather for default selection
         fetchWeatherForecast(DEFAULT_WEATHER_ID, DEFAULT_CITY)
 
         return () => {
             weatherControllerRef.current?.abort()
             locationsControllerRef.current?.abort()
         }
-    }, [fetchAllLocations, fetchSpotPrices, fetchWeatherForecast])
+    }, [])   // <-- empty deps, runs only once
+
 
     // --- Utilities ---
     const getDisplayedSpotData = () => {
@@ -370,6 +374,7 @@ function App() {
                   fetchWeatherForecast={() => fetchWeatherForecast(selectedId, selectedCity)}
                   locations={locations}
                   onSelectLocation={(loc) => {
+                      console.log("Selected from picker:", loc)
                       setSelectedId(loc.id)
                       setSelectedCity(loc.name)
                       fetchWeatherForecast(loc.id, loc.name)

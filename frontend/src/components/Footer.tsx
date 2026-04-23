@@ -1,11 +1,9 @@
-import React from 'react'
-import jkLogo from '../public/jk-logo.png'
 
 const Footer = () => {
   return (
     <footer className="app-footer">
       <nav aria-label="Footer navigation">
-        <img src={jkLogo} className="logo" alt="Aspire logo" />
+              <img src="/jk-logo.png" className="logo" alt="Aspire logo" />
 
         <a
           href="https://github.com/JMKangas/ElectricityAPI"
