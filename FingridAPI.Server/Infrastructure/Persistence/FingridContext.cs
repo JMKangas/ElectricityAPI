@@ -1,20 +1,19 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
+﻿using FingridAPI.Server.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
-namespace FingridAPI.Server.Infrastructure.Persistence
+namespace FingridAPI.Server.Infrastructure.Persistence;
+
+public class FingridContext : DbContext
 {
-    public class FingridContext(DbContextOptions<FingridContext> options)
-        : DbContext(options)
+    public FingridContext(DbContextOptions<FingridContext> options)
+        : base(options) { }
+
+    public DbSet<WeatherLocation> WeatherLocations => Set<WeatherLocation>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        //TODO
-        //public DbSet<Item> Items => Set<Item>();
-
-        //public DbSet<Category> Categories => Set<Category>();
-
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    modelBuilder.ApplyConfigurationsFromAssembly(typeof(ItemEntityConfiguration).Assembly);
-        //}
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(FingridContext).Assembly);
     }
 
 }

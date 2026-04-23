@@ -1,4 +1,8 @@
 ﻿using FingridAPI.Server.API.DTOs;
+using FingridAPI.Server.Domain.Entities;
+using FingridAPI.Server.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 using System.Text.Json;
 
 namespace FingridAPI.Server.Application.Services
@@ -8,38 +12,67 @@ namespace FingridAPI.Server.Application.Services
     public sealed class WeatherService
     {
         private readonly HttpClient _http;
-        private readonly Dictionary<string, (WeatherResponseDto Value, DateTime Expiry)> _cache = [];
+        private readonly Dictionary<Guid, (WeatherResponseDto Value, DateTime Expiry)> _cache = [];
+        private readonly WeatherLocationRepository _repo;
 
-        public WeatherService(HttpClient http)
+        public WeatherService(HttpClient http, WeatherLocationRepository repo)
         {
             _http = http;
+            _repo = repo;
         }
 
-        public async Task<WeatherResponseDto?> GetWeatherAsync(string city)
+        public Task<WeatherLocation?> GetLocation(Guid id, string city, CancellationToken ct)
         {
-            // ✅ Cache 30 min
-            if (_cache.TryGetValue(city, out var cached) && cached.Expiry > DateTime.UtcNow)
+            return _repo.FetchWeatherLocationAsync(id, city, ct);
+        }
+
+        public async Task<List<WeatherCityDto>> GetAllLocationsAsync(CancellationToken ct)
+        {
+            var entities = await _repo.FetchAllAsync(ct);
+
+            return entities.Select(x => new WeatherCityDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+            }).ToList();
+        }
+
+
+        public async Task<WeatherResponseDto?> GetWeatherAsync([FromQuery] Guid id, [FromQuery] string city, CancellationToken ct)
+        {
+            // ✅ Cache 15 min
+            if (_cache.TryGetValue(id, out var cached) && cached.Expiry > DateTime.UtcNow)
                 return cached.Value;
+            double lat = 0;
+            double lon = 0;
+            var location = await GetLocation(id, city, ct);
 
-            // ✅ 1. Geocoding (city → lat/lon)
-            var geoUrl =
-                $"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&format=json";
+            if (location == null)
+            {
+                // ✅ 1. Geocoding (city → lat/lon)
+                var geoUrl =
+                    $"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&format=json";
 
-            var geoJson = await _http.GetStringAsync(geoUrl);
-            using var geoDoc = JsonDocument.Parse(geoJson);
+                var geoJson = await _http.GetStringAsync(geoUrl);
+                using var geoDoc = JsonDocument.Parse(geoJson);
 
-            var root = geoDoc.RootElement;
-            if (!root.TryGetProperty("results", out var results) || results.GetArrayLength() == 0)
-                return null;
+                var root = geoDoc.RootElement;
+                if (!root.TryGetProperty("results", out var results) || results.GetArrayLength() == 0)
+                    return null;
 
-            var loc = results[0];
-            double lat = loc.GetProperty("latitude").GetDouble();
-            double lon = loc.GetProperty("longitude").GetDouble();
+                var loc = results[0];
+                lat = loc.GetProperty("latitude").GetDouble();
+                lon = loc.GetProperty("longitude").GetDouble();
+            }
+            else
+            {
+                lat = location.Latitude;
+                lon = location.Longitude;
+            }
 
-            // ✅ 2. FMI EDR CoverageJSON
             var fmiUrl =
                 "https://opendata.fmi.fi/edr/collections/harmonie_scandinavia_surface/position" +
-                $"?coords=POINT({lon}%20{lat})" +
+                $"?coords=POINT({lon.ToString(CultureInfo.InvariantCulture)} {lat.ToString(CultureInfo.InvariantCulture)})" +
                 "&parameter=Temperature,WindSpeedMS,Humidity,Pressure" +
                 "&crs=OGC:CRS84&f=CoverageJSON";
 
@@ -81,7 +114,7 @@ namespace FingridAPI.Server.Application.Services
                 ]
             };
 
-            _cache[city] = (response, DateTime.UtcNow.AddMinutes(30));
+            _cache[id] = (response, DateTime.UtcNow.AddMinutes(15));
             return response;
         }
     }

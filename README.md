@@ -10,11 +10,11 @@ A .NET 10 web API to track electricity grid status and price information in Finl
 | Layer | Technology |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | Backend | <img src="https://upload.wikimedia.org/wikipedia/commons/e/ee/.NET_Core_Logo.svg" alt=".NET 10 Aspire" width="40"/> **.NET 10 Aspire** |
-| Frontend | <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg" alt="React" width="40"/> **React** (in development) |
-| Database | <img src="https://upload.wikimedia.org/wikipedia/commons/2/29/Postgresql_elephant.svg" alt="PostgreSQL" width="40"/> **PostgreSQL** (planned) |
+| Frontend | <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg" alt="React" width="40"/> **React** |
+| Database | <img src="https://upload.wikimedia.org/wikipedia/commons/2/29/Postgresql_elephant.svg" alt="PostgreSQL" width="40"/> **PostgreSQL** |
 | Deployment | <img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/Nginx_logo.svg" alt="NGINX" width="40"/> **NGINX** |
 
-The backend will use PostgreSQL for storing historical grid and price data. The schema is designed to efficiently handle real-time updates and historical queries.
+The backend will use PostgreSQL for storing city cordinates. The schema is designed to efficiently handle real-time updates and queries.
 
 📦 Installation
 
