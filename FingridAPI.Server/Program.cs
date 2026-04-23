@@ -99,7 +99,6 @@ api.MapDatasetEndpoints();
 app.MapDefaultEndpoints();
 
 app.UseFileServer();
-app.UseHttpsRedirection();
 
 app.Run();
 
